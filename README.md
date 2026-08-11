@@ -4,11 +4,13 @@ A local vision-language agent that completes tasks on real GUIs by looping scree
 
 ## Why this exists
 
-This is a portfolio and research artifact, built to demonstrate applied agentic AI and CV/DL engineering, not a shipped product. The core claim it is built to test:
+Point a general-purpose vision-language model at a screenshot and ask it to click the right button, and it works fine on a simple demo and falls apart the moment the page has more than a handful of elements on it. Asking it for an exact pixel coordinate is the wrong ask: it will confidently return a point that is close, not on the button. Wiring that up to a real browser and letting it click blind is how you end up filing bug reports against your own agent instead of the app it's supposed to be testing.
 
-**UI element detection plus set-of-marks prompting plus a small VLM fine-tuned on app-specific grounding data beats raw VLM coordinate prediction.**
+The instinct most people reach for next is a bigger hosted model. That does not fix the underlying problem, it just makes each wrong click cost more. This project starts from the opposite assumption: grounding gets more reliable when you stop asking the model to guess coordinates freehand, and instead give it a shortlist.
 
-General-purpose vision-language models are unreliable at turning an instruction like "click the login button" into an exact pixel coordinate. This project's pipeline addresses that with a detector that proposes candidate UI element boxes, a set-of-marks renderer that numbers them on the screenshot, and a grounder that picks a box ID instead of guessing raw coordinates. Phase 7 will fine-tune a small local VLM on hand-corrected, app-specific grounding data and compare it against the base model on the same held-out benchmark.
+**Core approach: UI element detection plus set-of-marks prompting plus a small VLM fine-tuned on app-specific grounding data beats raw VLM coordinate prediction.**
+
+A detector proposes candidate UI element boxes on the screenshot first, a set-of-marks renderer numbers them, and the grounder picks a box ID instead of guessing raw coordinates. Phase 7 will fine-tune a small local VLM on hand-corrected, app-specific grounding data and compare it against the base model on the same held-out benchmark, to see how much of the remaining gap that closes.
 
 Reproducibility and documented reasoning matter here as much as the agent working. Every phase in this repository's history records what was tried, what the numbers were, and what was learned, including the failure modes.
 
