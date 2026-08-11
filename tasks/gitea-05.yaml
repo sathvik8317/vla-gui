@@ -1,0 +1,8 @@
+id: gitea-05
+app: gitea
+url: http://localhost:8082/
+seed_actions: []
+instruction: "Click 'Register', then on the registration page click 'Sign In' to go back to the login page instead."
+task_assertion: "Sign In - Gitea"
+optimal_steps: 2
+notes: "Same optimal_steps caveat as gitea-04 — persistent top nav means a 1-click shortcut also exists."

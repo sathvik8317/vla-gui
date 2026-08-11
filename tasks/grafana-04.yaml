@@ -1,0 +1,8 @@
+id: grafana-04
+app: grafana
+url: http://localhost:8084/login
+seed_actions: []
+instruction: "Type any username into the 'email or username' field, then click 'Log in' without entering a password."
+task_assertion: "Password is required"
+optimal_steps: 2
+notes: "Exact-case error text confirmed via a live submission with username filled and password empty."

@@ -1,0 +1,8 @@
+id: grafana-03
+app: grafana
+url: http://localhost:8084/login
+seed_actions: []
+instruction: "Click 'Log in' without entering anything, to see the validation error."
+task_assertion: "Email or username is required"
+optimal_steps: 1
+notes: "Exact-case error text confirmed via a live empty-form submission."

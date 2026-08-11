@@ -1,0 +1,8 @@
+id: gitea-02
+app: gitea
+url: http://localhost:8082/
+seed_actions: []
+instruction: "Click 'Register' in the top navigation to go to the account creation page."
+task_assertion: "Register - Gitea"
+optimal_steps: 1
+notes: "Verified via <title> text, confirmed present in the live page."

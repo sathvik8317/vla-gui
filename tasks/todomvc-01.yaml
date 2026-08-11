@@ -1,0 +1,9 @@
+id: todomvc-01
+app: todomvc
+url: http://localhost:8081/
+seed_actions:
+  - "type 'Buy milk' into the new-todo input and press Enter"
+instruction: "Mark the todo item 'Buy milk' as complete by clicking its checkbox."
+task_assertion: "completed"
+optimal_steps: 1
+notes: ""

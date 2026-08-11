@@ -1,0 +1,8 @@
+id: juice-shop-01
+app: juice-shop
+url: http://localhost:8083/
+seed_actions: []
+instruction: "Dismiss the welcome banner by clicking its close button."
+task_assertion: "!Welcome to OWASP Juice Shop"
+optimal_steps: 1
+notes: "Assertion text confirmed via the live dialog's actual rendered text."

@@ -1,0 +1,8 @@
+id: grafana-01
+app: grafana
+url: http://localhost:8084/login
+seed_actions: []
+instruction: "Click 'Forgot your password?' to go to the password reset page."
+task_assertion: "Reset password"
+optimal_steps: 1
+notes: "Verified via the live reset-password page's actual rendered text (page <title> is generically 'Grafana', not distinguishing, so text content is used instead)."

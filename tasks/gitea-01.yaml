@@ -1,0 +1,8 @@
+id: gitea-01
+app: gitea
+url: http://localhost:8082/
+seed_actions: []
+instruction: "Click 'Sign In' in the top navigation to go to the login page."
+task_assertion: "Sign In - Gitea"
+optimal_steps: 1
+notes: "Verified via <title> text, confirmed present in the live page."

@@ -1,0 +1,14 @@
+id: gitea-04
+app: gitea
+url: http://localhost:8082/
+seed_actions: []
+instruction: "Click 'Sign In', then on the sign-in page click 'Register' to switch to account creation instead."
+task_assertion: "Register - Gitea"
+optimal_steps: 2
+notes: >
+  Gitea's top nav (including "Register") persists on every page, so this
+  target is technically also reachable in 1 click from Home. optimal_steps
+  reflects the instructed path, not the only reachable path — the harness
+  scores efficiency against the intended route, it does not enforce it (this
+  is a known, accepted limitation of end-state-only DOM assertions, same as
+  in the other apps' multi-step tasks).

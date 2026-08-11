@@ -1,0 +1,12 @@
+id: juice-shop-05
+app: juice-shop
+url: http://localhost:8083/
+seed_actions: []
+instruction: "Dismiss the welcome banner, dismiss the cookie consent banner, then go to the next page of products."
+task_assertion: "OWASP Juice Shop LEGO"
+optimal_steps: 3
+notes: >
+  All three sub-steps are necessary in this order (both banners must be
+  cleared before the pagination control is clickable) — a genuine 3-step
+  chain, not an arbitrarily lengthened one. The one 3-step task for this app,
+  per the suite-wide bias toward short tasks.

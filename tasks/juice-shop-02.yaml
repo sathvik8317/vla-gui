@@ -1,0 +1,9 @@
+id: juice-shop-02
+app: juice-shop
+url: http://localhost:8083/
+seed_actions:
+  - "dismiss the welcome banner (its overlay otherwise blocks other clicks)"
+instruction: "Dismiss the cookie consent banner by clicking its close button."
+task_assertion: "!fruit cookies"
+optimal_steps: 1
+notes: "Assertion text confirmed via the live cookie dialog's actual rendered text."

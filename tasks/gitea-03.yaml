@@ -1,0 +1,8 @@
+id: gitea-03
+app: gitea
+url: http://localhost:8082/
+seed_actions: []
+instruction: "Click 'Explore' in the top navigation to browse repositories."
+task_assertion: "Explore - Gitea"
+optimal_steps: 1
+notes: "Verified via <title> text, confirmed present in the live page."

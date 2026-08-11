@@ -1,0 +1,15 @@
+id: todomvc-05
+app: todomvc
+url: http://localhost:8081/
+seed_actions: []
+instruction: "Add a new todo item labeled 'Buy milk', then mark it complete, then delete it."
+task_assertion: "!Buy milk"
+optimal_steps: 3
+notes: >
+  Shares the Enter-submission gap noted in todomvc-03 (first sub-step is a
+  type action). Also the longest task in the suite by design — kept to a
+  single example at 3 steps rather than several, per the decision to bias
+  this suite toward single-step grounding tasks over multi-step sequencing
+  (see CLAUDE.md status: the base planner's demonstrated limit is sequencing,
+  not grounding, so a suite dominated by long tasks would mostly measure
+  sequencing failure, not the grounding-accuracy claim this project is about).

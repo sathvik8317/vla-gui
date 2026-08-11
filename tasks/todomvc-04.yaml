@@ -1,0 +1,14 @@
+id: todomvc-04
+app: todomvc
+url: http://localhost:8081/
+seed_actions:
+  - "type 'Buy milk' into the new-todo input and press Enter"
+instruction: "Mark 'Buy milk' as complete by clicking its checkbox, then delete it by clicking its delete (x) button."
+task_assertion: "!Buy milk"
+optimal_steps: 2
+notes: >
+  This is the exact task used for the Phase 4 orchestrator check. Confirmed
+  the base qwen3-vl:2b-instruct planner does not reliably complete it within
+  budget — see CLAUDE.md status for the diagnosis. Expect uncertain/
+  step_budget_exceeded outcomes on the base model; this is the known baseline,
+  not a suite bug.

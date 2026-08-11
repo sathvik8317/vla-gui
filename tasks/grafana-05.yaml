@@ -1,0 +1,11 @@
+id: grafana-05
+app: grafana
+url: http://localhost:8084/login
+seed_actions: []
+instruction: "Type any username and any password into the login form, then click 'Log in'."
+task_assertion: "Invalid username or password"
+optimal_steps: 3
+notes: >
+  Exact-case error text confirmed via a live submission with bogus
+  credentials. The one 3-step task for this app, per the suite-wide bias
+  toward short tasks.

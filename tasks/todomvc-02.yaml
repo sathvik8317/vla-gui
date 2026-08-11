@@ -1,0 +1,9 @@
+id: todomvc-02
+app: todomvc
+url: http://localhost:8081/
+seed_actions:
+  - "type 'Walk the dog' into the new-todo input and press Enter"
+instruction: "Delete the todo item 'Walk the dog' by clicking its delete (x) button."
+task_assertion: "!Walk the dog"
+optimal_steps: 1
+notes: ""

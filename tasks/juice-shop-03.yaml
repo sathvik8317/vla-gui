@@ -1,0 +1,13 @@
+id: juice-shop-03
+app: juice-shop
+url: http://localhost:8083/
+seed_actions:
+  - "dismiss the welcome banner"
+  - "dismiss the cookie consent banner"
+instruction: "Click the pagination control to go to the next page of products."
+task_assertion: "OWASP Juice Shop LEGO"
+optimal_steps: 1
+notes: >
+  Assertion is a product name confirmed present only on page 2, absent on
+  page 1 (verified zero overlap between page 1 and page 2 product names in
+  the live app).

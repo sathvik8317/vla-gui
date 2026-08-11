@@ -1,0 +1,10 @@
+id: grafana-02
+app: grafana
+url: http://localhost:8084/login
+seed_actions: []
+instruction: "Click the 'Show password' toggle to reveal the password field's contents as plain text."
+task_assertion: '!type="password"'
+optimal_steps: 1
+notes: >
+  Verified live: clicking Show password flips the input's type attribute
+  from password to text, confirmed via direct before/after DOM inspection.

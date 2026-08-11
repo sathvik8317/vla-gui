@@ -1,0 +1,12 @@
+id: juice-shop-04
+app: juice-shop
+url: http://localhost:8083/
+seed_actions: []
+instruction: "Dismiss the welcome banner, then dismiss the cookie consent banner."
+task_assertion: "!fruit cookies"
+optimal_steps: 2
+notes: >
+  Order matters: the welcome banner's overlay blocks pointer events on the
+  cookie banner underneath it (confirmed live — clicking the cookie banner's
+  close button before the welcome banner is dismissed fails with a
+  Playwright "intercepts pointer events" error).
