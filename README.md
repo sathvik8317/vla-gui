@@ -71,10 +71,11 @@ A fresh clone on a different GPU driver or CUDA version may need `pyproject.toml
 
 ## Known issues
 
-Two real, open bugs, tracked so they do not get lost before Phase 8's failure-mode writeup:
+One real, open bug, tracked so it does not get lost before Phase 8's failure-mode writeup:
 
-- **The `type` action never presses Enter.** `orchestrate.py`'s `_act_node` calls `Executor.type()` after a click but never calls `Executor.press("Enter")`, even though `Executor` already has a `press()` method. TodoMVC only adds a new item on the Enter keydown, with no submit button, so this blocks `todomvc-03` and `todomvc-05` from passing structurally, regardless of model quality, until it's fixed.
 - **Orchestrator step history loses the click target (T-4.5).** `_verify_node`'s history entries are built as `f"{action.type} -> {result}"` (for example `"click -> uncertain"`), which drops what was actually clicked. This is a real gap in what the planner can see across steps, though a controlled diagnostic confirmed it is not the cause of Phase 4's stuck-loop behavior on multi-step tasks (see the status note above). Deferred to Phase 8's failure-mode section rather than fixed speculatively.
+
+Fixed since Phase 5 started: `type` actions previously never pressed Enter, which structurally blocked `todomvc-03` and `todomvc-05`. `Action`/`PlannedStep` now carry a `submit` flag, and `_act_node` presses Enter after typing when the planner sets it. Unconditionally pressing Enter after every `type` was considered and rejected: `grafana-05` types a username then a password before clicking Log in, and an early Enter would submit the form with the password field still empty, changing the task's actual outcome. Whether `todomvc-03`/`05` pass end to end now depends on the small planner actually choosing `submit=True` for a single-field form, which is a separate, already-documented reliability question, not a structural block.
 
 ## Layout
 

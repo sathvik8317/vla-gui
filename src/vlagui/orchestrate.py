@@ -44,6 +44,7 @@ class AgentState(TypedDict, total=False):
     planned_action_type: str
     planned_target: str | None
     planned_value: str | None
+    planned_submit: bool
     boxes: list[Box]
     resolved_action: Action
     after_shot: Path
@@ -74,6 +75,7 @@ class Orchestrator:
             "planned_action_type": step.action_type,
             "planned_target": step.target_description,
             "planned_value": step.value,
+            "planned_submit": step.submit,
         }
 
     def _detect_node(self, state: AgentState) -> dict:
@@ -86,7 +88,11 @@ class Orchestrator:
         if action_type not in ("click", "type"):
             return {"resolved_action": Action(type=action_type, value=state["planned_value"])}
         resolved = grounder.ground(state["before_shot"], state["planned_target"] or "", state["boxes"])
-        return {"resolved_action": Action(type=action_type, target=resolved.target, value=state["planned_value"])}
+        return {
+            "resolved_action": Action(
+                type=action_type, target=resolved.target, value=state["planned_value"], submit=state["planned_submit"]
+            )
+        }
 
     def _act_node(self, state: AgentState) -> dict:
         action = state["resolved_action"]
@@ -96,6 +102,8 @@ class Orchestrator:
             self.ex.click(x, y)
             if action.type == "type" and action.value:
                 self.ex.type(action.value)
+                if action.submit:
+                    self.ex.press("Enter")
         elif action.type == "scroll":
             dy = 300 if action.value == "down" else -300
             self.ex.scroll(dy=dy)

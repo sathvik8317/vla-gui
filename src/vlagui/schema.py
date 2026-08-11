@@ -16,6 +16,7 @@ class Action(BaseModel):
     type: ActionType
     target: str | None = None  # SoM element id or "x,y" raw coords
     value: str | None = None  # typed text / scroll amount
+    submit: bool = False  # type only: press Enter after typing to submit
 
 
 class StepRecord(BaseModel):

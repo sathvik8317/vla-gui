@@ -19,6 +19,7 @@ class PlannedStep(BaseModel):
     action_type: Literal["click", "type", "scroll", "done"]
     target_description: str | None = None  # NL description for the grounder (click/type)
     value: str | None = None  # text to type, or "up"/"down" for scroll
+    submit: bool = False  # type only: press Enter after typing to submit
     reasoning: str = ""
 
 
@@ -31,7 +32,10 @@ def plan(screenshot_path: Path, task_instruction: str, history: list[str], steps
         f"Steps remaining: {steps_remaining}\n\n"
         "Decide the single next action.\n"
         "- click: target_description names the element to click, in plain language.\n"
-        "- type: target_description names the input field to click first, value is the text to type into it.\n"
+        "- type: target_description names the input field to click first, value is the text to type into it. "
+        "Set submit=true only if pressing Enter after typing should submit it immediately (e.g. a single-field "
+        "form with no separate submit button); leave submit=false if there is a separate button to click next, "
+        "so you don't submit before finishing other fields.\n"
         "- scroll: value is 'up' or 'down'.\n"
         "- done: the task is already complete, no further action needed.\n"
         "Respond with JSON matching the schema."

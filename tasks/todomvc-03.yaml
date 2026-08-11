@@ -6,10 +6,12 @@ instruction: "Add a new todo item labeled 'Write tests' by typing it into the in
 task_assertion: "Write tests"
 optimal_steps: 1
 notes: >
-  KNOWN GAP: this task's success depends on the "type" action submitting via
-  Enter after typing (TodoMVC only adds the item on the Enter keydown, no
-  submit button). orchestrate.py's act_node currently calls Executor.type()
-  but never Executor.press("Enter") — see T-4.5-adjacent gap. This task will
-  not pass under the current orchestrator regardless of model quality until
-  that's implemented; included anyway so the harness has a task ready the
-  moment act_node supports it, per FR-4 (type is a required action type).
+  Structural gap fixed: Action/PlannedStep now carry a submit flag, and
+  act_node presses Enter after typing when the planner sets it (TodoMVC only
+  adds the item on the Enter keydown, no submit button). Verified directly:
+  act_node with submit=True commits the todo on the live target. Whether this
+  task passes end-to-end now depends on the planner actually choosing
+  submit=True for a single-field form with no visible button — a live run
+  with the base planner did not set it and the task ran to
+  step_budget_exceeded, consistent with the base model's already-documented
+  single-step reliability limits rather than a new pipeline bug.
