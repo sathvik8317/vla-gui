@@ -12,7 +12,16 @@ from ..schema import VerifierResult
 _VALID = {"success", "failure", "uncertain"}
 
 
-def verify(before_screenshot: Path, after_screenshot: Path, task_assertion: str) -> VerifierResult:
+def verify(
+    before_screenshot: Path,
+    after_screenshot: Path,
+    task_assertion: str,
+    dom_before: str | None = None,
+    dom_after: str | None = None,
+) -> VerifierResult:
+    """dom_before/dom_after accepted, not used: this arm judges from screenshots
+    only, so its call signature matches rules.verify and either can be swapped
+    into orchestrate.py's verify_fn."""
     prompt = (
         "You see two screenshots, BEFORE and AFTER an action taken toward this goal: "
         f"{task_assertion}\n"

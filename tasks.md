@@ -89,10 +89,16 @@ Global contracts every task codes against (do not redefine): `schema.py` (T-0.2)
 | ID | Status | Depends | Files owned | Deliverable |
 |---|---|---|---|---|
 | T-5.1 | done | T-1.1 | `tasks/*.yaml` | 20 tasks, 5 per app; each declares seed actions, success assertion, optimal step count up front. Distribution revised to 12×1-step / 5×2-step / 3×3-step (was "capped 3–6") — biased toward short tasks per the confirmed planner sequencing limit (see CLAUDE.md status); a 3–6-step-heavy suite would mostly measure that limit, not grounding accuracy |
-| T-5.2 | todo | T-4.4, T-5.1 | `eval/harness.py`, `cli.py` | `vlagui eval --model base\|ft --ablate no-som,no-detector,vlm-verifier --report out.md` |
+| T-5.2 | done | T-4.4, T-5.1 | `eval/harness.py`, `cli.py` | `vlagui eval --model base\|ft --ablate no-som,no-detector,vlm-verifier --report out.md`. Completion rate + steps-to-completion per FR-16; click accuracy is intentionally NOT computed here (see note below) |
 | T-5.3 | todo | T-4.4 | `api.py` | FastAPI `POST /run`, `GET /runs/{id}`, SSE step stream — powers the Phase 8 demo |
 
-**Check:** one CLI invocation produces a complete comparison/ablation report with zero manual result collation.
+**Check:** one CLI invocation produces a complete comparison/ablation report with zero manual result collation. Verified: a live 2-task run (`gitea-01`, `grafana-01`) against the real stack produced a correctly formatted `reports/eval_report.md` with a summary table and per-task detail, no manual collation.
+
+**Notes on T-5.2's implementation:**
+- Fixed a structural blocker found while starting this task: `orchestrate.py`'s `_act_node` never called `Executor.press("Enter")` after typing, which blocked `todomvc-03`/`05`. Added a `submit` flag to `Action`/`PlannedStep` rather than always pressing Enter, since always pressing it would break `grafana-05` (typing a username must not submit before the password field is filled).
+- `orchestrate.py`'s `Orchestrator` had no way to swap in the OpenCV detector, raw-coordinate grounder, or VLM verifier — `protocols.py`'s ablation seams existed but were never wired to anything. Added `detect_fn`/`ground_fn`/`verify_fn` constructor params (defaulting to the Phase 2-4 primary implementations) so `eval/harness.py`'s `--ablate` flag has something real to swap. This touches a Phase 4-owned file from a Phase 5 task; noted here since it crosses the file-ownership lines the phase table otherwise keeps disjoint.
+- Click accuracy (also part of FR-16) isn't computed by the harness: task specs give a final `task_assertion`, not a per-step target box, so there's no ground truth to score click precision against at that granularity. That's what `eval/grounding.py` (T-3.2) already measures, against ScreenSpot and the local oracle set, where each example is an (instruction, target box) pair.
+- Confirmed live: `gitea-01` hit a one-off Playwright `Page.screenshot` CDP protocol error (3/3 retries succeeded in isolation) — a transient infra flake, not a harness or orchestrator bug. `orchestrate.py`'s blanket exception handler in `run()` already converts this into `outcome="failure"` with 0 steps, which is indistinguishable from a genuine failure in the report unless `termination_reason` is shown, so the per-task table now includes it.
 
 ---
 

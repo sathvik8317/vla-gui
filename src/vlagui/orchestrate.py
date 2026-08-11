@@ -11,7 +11,7 @@ invariants.
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import TypedDict
+from typing import Callable, TypedDict
 
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import END, StateGraph
@@ -22,8 +22,12 @@ from .browser import Executor
 from .config import settings
 from .detect import omniparser
 from .protocols import Box
-from .schema import Action, RunRecord, StepRecord
+from .schema import Action, RunRecord, StepRecord, VerifierResult
 from .verify import rules as rules_verifier
+
+DetectFn = Callable[[Path], list[Box]]
+GroundFn = Callable[[Path, str, list[Box]], Action]
+VerifyFn = Callable[..., VerifierResult]
 
 RUNS_DIR = Path(__file__).resolve().parents[2] / "fixtures" / "runs"
 
@@ -52,10 +56,26 @@ class AgentState(TypedDict, total=False):
 
 
 class Orchestrator:
-    def __init__(self, executor: Executor, run_dir: Path | None = None):
+    """detect_fn/ground_fn/verify_fn default to the primary implementation of each
+    ablation seam (OmniParser, set-of-marks grounding, rule-based verifier). Pass
+    alternatives (e.g. detect/opencv.detect, a raw-coordinate grounder, verify/vlm.verify)
+    to run the same loop under an ablation — this is FR-18's swap point, used by
+    eval/harness.py."""
+
+    def __init__(
+        self,
+        executor: Executor,
+        run_dir: Path | None = None,
+        detect_fn: DetectFn = omniparser.detect_boxes,
+        ground_fn: GroundFn = grounder.ground,
+        verify_fn: VerifyFn = rules_verifier.verify,
+    ):
         self.ex = executor
         self.run_dir = run_dir or RUNS_DIR
         self.run_dir.mkdir(parents=True, exist_ok=True)
+        self.detect_fn = detect_fn
+        self.ground_fn = ground_fn
+        self.verify_fn = verify_fn
         self._graph = self._build_graph()
 
     def _shot(self, name: str) -> Path:
@@ -81,13 +101,13 @@ class Orchestrator:
     def _detect_node(self, state: AgentState) -> dict:
         if state["planned_action_type"] not in ("click", "type"):
             return {"boxes": []}
-        return {"boxes": omniparser.detect_boxes(state["before_shot"])}
+        return {"boxes": self.detect_fn(state["before_shot"])}
 
     def _ground_node(self, state: AgentState) -> dict:
         action_type = state["planned_action_type"]
         if action_type not in ("click", "type"):
             return {"resolved_action": Action(type=action_type, value=state["planned_value"])}
-        resolved = grounder.ground(state["before_shot"], state["planned_target"] or "", state["boxes"])
+        resolved = self.ground_fn(state["before_shot"], state["planned_target"] or "", state["boxes"])
         return {
             "resolved_action": Action(
                 type=action_type, target=resolved.target, value=state["planned_value"], submit=state["planned_submit"]
@@ -116,8 +136,12 @@ class Orchestrator:
     def _verify_node(self, state: AgentState) -> dict:
         after_shot = state["after_shot"]
         dom_after = state["dom_after"]
-        result = rules_verifier.verify(
-            state["before_shot"], after_shot, state["task_assertion"], state["dom_before"], dom_after
+        result = self.verify_fn(
+            state["before_shot"],
+            after_shot,
+            state["task_assertion"],
+            dom_before=state["dom_before"],
+            dom_after=dom_after,
         )
         record = StepRecord(
             step_index=state["step_index"],
