@@ -1,0 +1,190 @@
+"""LangGraph loop: plan -> detect -> ground -> act -> verify, checkpointed, step-budgeted.
+
+Wires plan.py, detect/, ground.py, browser.py, and verify/rules.py — the only
+module allowed to import all of them. Must NEVER import oracle.py: the agent's
+perception pipeline (plan/detect/ground) stays pure-vision. verify/rules.py
+gets DOM state as plain strings the orchestrator captures itself via
+browser.py's Playwright Page, not through the oracle module — see CLAUDE.md
+invariants.
+"""
+
+import uuid
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import TypedDict
+
+from langgraph.checkpoint.memory import MemorySaver
+from langgraph.graph import END, StateGraph
+
+from . import ground as grounder
+from . import plan as planner
+from .browser import Executor
+from .config import settings
+from .detect import omniparser
+from .protocols import Box
+from .schema import Action, RunRecord, StepRecord
+from .verify import rules as rules_verifier
+
+RUNS_DIR = Path(__file__).resolve().parents[2] / "fixtures" / "runs"
+
+
+class AgentState(TypedDict, total=False):
+    task_instruction: str
+    task_assertion: str
+    step_index: int
+    max_steps: int
+    history: list[str]
+    steps: list[StepRecord]
+    done: bool
+    outcome: str | None
+    termination_reason: str
+    # scratch space for the step currently in flight
+    before_shot: Path
+    dom_before: str
+    planned_action_type: str
+    planned_target: str | None
+    planned_value: str | None
+    boxes: list[Box]
+    resolved_action: Action
+    after_shot: Path
+    dom_after: str
+
+
+class Orchestrator:
+    def __init__(self, executor: Executor, run_dir: Path | None = None):
+        self.ex = executor
+        self.run_dir = run_dir or RUNS_DIR
+        self.run_dir.mkdir(parents=True, exist_ok=True)
+        self._graph = self._build_graph()
+
+    def _shot(self, name: str) -> Path:
+        path = self.run_dir / name
+        self.ex.screenshot(path)
+        return path
+
+    def _plan_node(self, state: AgentState) -> dict:
+        shot = self._shot(f"step{state['step_index']}_before.png")
+        dom_before = self.ex.page.content()
+        step = planner.plan(
+            shot, state["task_instruction"], state["history"], state["max_steps"] - state["step_index"]
+        )
+        return {
+            "before_shot": shot,
+            "dom_before": dom_before,
+            "planned_action_type": step.action_type,
+            "planned_target": step.target_description,
+            "planned_value": step.value,
+        }
+
+    def _detect_node(self, state: AgentState) -> dict:
+        if state["planned_action_type"] not in ("click", "type"):
+            return {"boxes": []}
+        return {"boxes": omniparser.detect_boxes(state["before_shot"])}
+
+    def _ground_node(self, state: AgentState) -> dict:
+        action_type = state["planned_action_type"]
+        if action_type not in ("click", "type"):
+            return {"resolved_action": Action(type=action_type, value=state["planned_value"])}
+        resolved = grounder.ground(state["before_shot"], state["planned_target"] or "", state["boxes"])
+        return {"resolved_action": Action(type=action_type, target=resolved.target, value=state["planned_value"])}
+
+    def _act_node(self, state: AgentState) -> dict:
+        action = state["resolved_action"]
+        if action.type in ("click", "type"):
+            box = state["boxes"][int(action.target)]
+            x, y = box.x + box.width / 2, box.y + box.height / 2
+            self.ex.click(x, y)
+            if action.type == "type" and action.value:
+                self.ex.type(action.value)
+        elif action.type == "scroll":
+            dy = 300 if action.value == "down" else -300
+            self.ex.scroll(dy=dy)
+        # "done": no browser action
+
+        after_shot = self._shot(f"step{state['step_index']}_after.png")
+        dom_after = self.ex.page.content()
+        return {"after_shot": after_shot, "dom_after": dom_after}
+
+    def _verify_node(self, state: AgentState) -> dict:
+        after_shot = state["after_shot"]
+        dom_after = state["dom_after"]
+        result = rules_verifier.verify(
+            state["before_shot"], after_shot, state["task_assertion"], state["dom_before"], dom_after
+        )
+        record = StepRecord(
+            step_index=state["step_index"],
+            timestamp=datetime.now(timezone.utc),
+            screenshot_path=str(after_shot),
+            action=state["resolved_action"],
+            verifier_result=result,
+            notes=f"planned={state['planned_action_type']} target={state['planned_target']!r}",
+        )
+        steps = state["steps"] + [record]
+        history = state["history"] + [f"{state['resolved_action'].type} -> {result}"]
+
+        next_index = state["step_index"] + 1
+        if state["planned_action_type"] == "done":
+            return {"steps": steps, "history": history, "done": True, "outcome": "success", "termination_reason": "planner declared task done"}
+        if result == "success":
+            return {"steps": steps, "history": history, "done": True, "outcome": "success", "termination_reason": "verifier confirmed success"}
+        if next_index >= state["max_steps"]:
+            return {"steps": steps, "history": history, "done": True, "outcome": "step_budget_exceeded", "termination_reason": "step budget exhausted"}
+        return {"steps": steps, "history": history, "step_index": next_index, "done": False}
+
+    def _route_after_verify(self, state: AgentState) -> str:
+        return END if state["done"] else "plan"
+
+    def _build_graph(self):
+        graph = StateGraph(AgentState)
+        graph.add_node("plan", self._plan_node)
+        graph.add_node("detect", self._detect_node)
+        graph.add_node("ground", self._ground_node)
+        graph.add_node("act", self._act_node)
+        graph.add_node("verify", self._verify_node)
+
+        graph.set_entry_point("plan")
+        graph.add_edge("plan", "detect")
+        graph.add_edge("detect", "ground")
+        graph.add_edge("ground", "act")
+        graph.add_edge("act", "verify")
+        graph.add_conditional_edges("verify", self._route_after_verify, {"plan": "plan", END: END})
+
+        return graph.compile(checkpointer=MemorySaver())
+
+    def run(self, task_instruction: str, task_assertion: str, max_steps: int | None = None) -> RunRecord:
+        run_id = str(uuid.uuid4())
+        max_steps = max_steps or settings.max_steps
+        started_at = datetime.now(timezone.utc)
+
+        initial_state: AgentState = {
+            "task_instruction": task_instruction,
+            "task_assertion": task_assertion,
+            "step_index": 0,
+            "max_steps": max_steps,
+            "history": [],
+            "steps": [],
+            "done": False,
+            "outcome": None,
+            "termination_reason": "",
+        }
+
+        try:
+            final_state = self._graph.invoke(initial_state, config={"configurable": {"thread_id": run_id}})
+            outcome = final_state["outcome"]
+            steps = final_state["steps"]
+            termination_reason = final_state["termination_reason"]
+        except Exception as e:
+            outcome = "failure"
+            steps = []
+            termination_reason = f"error: {e}"
+
+        return RunRecord(
+            run_id=run_id,
+            task_id=task_instruction,
+            model=settings.grounder_model,
+            started_at=started_at,
+            ended_at=datetime.now(timezone.utc),
+            outcome=outcome,
+            termination_reason=termination_reason,
+            steps=steps,
+        )
