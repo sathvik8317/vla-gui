@@ -26,7 +26,6 @@ fixtures/
 # Node (targets/ apps that end up needing a JS toolchain)
 node_modules/
 
-# Claude Code local session state, auto-generated handoffs, and internal notes
+# Claude Code local session state and auto-generated handoffs
 .claude/
 HANDOFF.md
-CLAUDE.md
