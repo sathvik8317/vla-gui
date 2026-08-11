@@ -29,7 +29,7 @@ The agent loop, one line per component:
 
 ## Current status
 
-**Phase 4 is done. Phase 5 is in progress** (task suite written, eval harness and API not yet built). See `tasks.md` for the full roadmap and per-task board.
+**Phase 5 is done.** Next up is Phase 6 (dataset). See `tasks.md` for the full roadmap and per-task board.
 
 Completed so far:
 
@@ -38,9 +38,9 @@ Completed so far:
 - UI element detector (OmniParser and an OpenCV fallback) and a set-of-marks renderer (Phase 2).
 - A grounder on `qwen3-vl:2b-instruct` with both set-of-marks and raw-coordinate modes, and a component-level grounding eval against ScreenSpot (Phase 3).
 - A structured single-action planner, a rule-based verifier, and a LangGraph orchestrator loop with checkpointing and a step budget (Phase 4).
-- Twenty task specs across the four target apps, biased toward short (one to two step) tasks (Phase 5, T-5.1).
+- Twenty task specs across the four target apps, biased toward short (one to two step) tasks; a CLI eval harness (`vlagui eval`) that runs the suite across models and ablation arms and writes a single comparison report; and a FastAPI demo service (`vlagui serve`, `POST /run`, `GET /runs/{id}`, an SSE step stream) (Phase 5).
 
-Not done yet: there is no fine-tuned model, no eval harness or comparison report, no API, and no dataset. Any numbers below Phase 3 in the roadmap do not exist yet. The only measured number so far is the Phase 3 grounding hit-rate on ScreenSpot; there is no fine-tuned model to compare it against.
+Not done yet: there is no fine-tuned model, no dataset, and no base-vs-fine-tuned comparison numbers. Any numbers below Phase 3 in the roadmap do not exist yet. The only measured number so far is the Phase 3 grounding hit-rate on ScreenSpot; there is no fine-tuned model to compare it against. The eval harness reports completion rate and steps-to-completion at the task-suite level; click accuracy stays at the Phase 3 grounding eval (component-level, against ScreenSpot and the local oracle set) rather than being duplicated at the task level: task instructions don't reliably resolve to one correct ground-truth box automatically, confirmed directly rather than assumed (see `tasks.md`'s FR-16 notes for why).
 
 **A confirmed finding from Phase 4's diagnostic work, not a bug**: the base `qwen3-vl:2b-instruct` planner reliably completes single-step actions but does not reliably track multi-step task state. A controlled test isolating visual state from textual history showed the planner ignores unambiguous visual evidence of progress (a checked checkbox with struck-through text) but advances correctly when told in text that a step succeeded, and appears to key off literal result words in history rather than reasoning over either channel. This is a genuine capability limit of the base model, not a pipeline defect, and Phase 5's task suite was sized accordingly.
 
@@ -61,7 +61,8 @@ ollama pull qwen3-vl:2b-instruct # not the unsuffixed "qwen3-vl:2b" tag, see not
 ollama list                      # confirm the model is present
 
 uv run vlagui run <task.yaml>    # run the agent loop on one task
-uv run vlagui eval --model base,ft --ablate all --report out.md   # not built yet (Phase 5, T-5.2)
+uv run vlagui eval --model base --ablate all --report out.md  # --model ft errors until Phase 7 exists
+uv run vlagui serve              # FastAPI demo service: POST /run, GET /runs/{id}, SSE stream
 uv run pytest                    # run the test suite
 ```
 
@@ -88,7 +89,8 @@ src/vlagui/
   plan.py                                            # planner
   verify/                                            # rule-based (primary) and VLM (ablation) verifiers
   orchestrate.py                                     # LangGraph agent loop
-  eval/                                               # grounding eval, ScreenSpot harness
+  eval/                                               # grounding eval, ScreenSpot harness, task-suite harness
+  cli.py, api.py                                      # `vlagui run/eval/serve`, FastAPI demo service
 tasks/                                                 # per-task YAML specs
 targets/                                               # self-hosted target app configs
 docker-compose.yml                                     # the 4 target apps

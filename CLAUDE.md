@@ -8,7 +8,9 @@ This is a personal project to build depth in agentic systems, computer vision, a
 
 ## Status
 
-**Phase 4 done.** Next up: dispatch the Phase 5 batch (T-5.1–T-5.3) in `tasks.md`.
+**Phase 5 done.** Next up: Phase 6 (dataset: T-6.1–T-6.3) in `tasks.md`.
+
+**FR-16's click-accuracy metric is intentionally split, not a gap (2026-08-11):** `eval/harness.py` (T-5.2) reports completion rate and steps-to-completion at the task-suite level; click accuracy stays at `eval/grounding.py` (T-3.2), component-level, against ScreenSpot and the local oracle set. A live-oracle-callback approach for task-level click accuracy was considered and rejected: task instructions don't reliably resolve to one correct oracle box automatically (confirmed directly — juice-shop's banner close buttons carry no accessible label at all, and todomvc's input's label is its placeholder text, not the instruction's wording). See `tasks.md`'s FR coverage index and T-5.2 notes for the full reasoning.
 
 **Confirmed model-capability limit, not a pipeline bug (2026-08-11):** the base `qwen3-vl:2b-instruct` planner does not reliably track multi-step task state. `verify/rules.py`'s success condition is correct (returns `"success"` when the right 2-step sequence is actually executed — confirmed directly). `orchestrate.py`'s step-history string is under-informative (`"click -> uncertain"`, no record of *what* was clicked — a real, separate, non-blocking issue, tracked as [[T-4.5]]).
 
@@ -21,8 +23,7 @@ The precise finding, from a channel-isolated diagnostic (visual state and textua
 - [x] **Phase 2 — Detector + set-of-marks.** OmniParser (GPU icon-detect / CPU captioner split) and OpenCV fallback behind one interface; numbered-box renderer.
 - [x] **Phase 3 — Grounder + first real number.** `qwen3-vl:2b-instruct` via Ollama, SoM + raw-coordinate modes; component-level grounding eval on ScreenSpot (hit-rate primary).
 - [x] **Phase 4 — Planner + verifier + orchestrator.** Structured single-action planner; rule-based verifier (VLM verifier as ablation); LangGraph loop with checkpointing and step budget.
-- [ ] **Phase 4 — Planner + verifier + orchestrator.** Structured single-action planner; rule-based verifier (VLM verifier as ablation); LangGraph loop with checkpointing and step budget.
-- [ ] **Phase 5 — Task suite + eval harness + API.** ~20 tasks across the 4 apps; CLI eval harness with base/fine-tuned + ablation comparison; FastAPI service for the demo.
+- [x] **Phase 5 — Task suite + eval harness + API.** ~20 tasks across the 4 apps; CLI eval harness with base/fine-tuned + ablation comparison; FastAPI service for the demo.
 - [ ] **Phase 6 — Dataset.** Oracle auto-labels at scale; OmniParser labels + manual correction; merge with public training corpus; holdout split by page.
 - [ ] **Phase 7 — Fine-tune + serve + compare.** Unsloth QLoRA on Colab T4 (ViT frozen, LoRA on LLM only); export to GGUF with stock mmproj; re-run eval on both models.
 - [ ] **Phase 8 — Report, demo, reproducibility.** README with architecture and decision rationale, before/after results, failure modes; demo GIF; fresh-clone reproduction pass.
