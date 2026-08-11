@@ -1,0 +1,22 @@
+services:
+  todomvc:
+    build: ./targets/todomvc
+    ports:
+      - "8081:80"
+
+  gitea:
+    image: gitea/gitea:1.22
+    environment:
+      - GITEA__security__INSTALL_LOCK=true
+    ports:
+      - "8082:3000"
+
+  juice-shop:
+    image: bkimminich/juice-shop:v17.3.0
+    ports:
+      - "8083:3000"
+
+  grafana:
+    image: grafana/grafana:11.3.0
+    ports:
+      - "8084:3000"

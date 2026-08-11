@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>TodoMVC</title>
+<style>
+  body { font-family: sans-serif; max-width: 550px; margin: 40px auto; }
+  h1 { text-align: center; color: #b83f45; }
+  #new-todo { width: 100%; font-size: 20px; padding: 10px; box-sizing: border-box; }
+  #todo-list { list-style: none; padding: 0; margin: 20px 0; }
+  #todo-list li { display: flex; align-items: center; padding: 10px; border-bottom: 1px solid #ededed; }
+  #todo-list li.completed label { text-decoration: line-through; color: #949494; }
+  #todo-list li label { flex: 1; margin: 0 10px; }
+  .destroy { background: none; border: none; color: #cc9a9a; font-size: 20px; cursor: pointer; }
+</style>
+</head>
+<body>
+<h1>todos</h1>
+<input id="new-todo" placeholder="What needs to be done?" autofocus>
+<ul id="todo-list"></ul>
+
+<script>
+const STORAGE_KEY = "todos-vlagui";
+const input = document.getElementById("new-todo");
+const list = document.getElementById("todo-list");
+
+function load() {
+  return JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+}
+function save(todos) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(todos));
+}
+function render() {
+  const todos = load();
+  list.innerHTML = "";
+  todos.forEach((todo, i) => {
+    const li = document.createElement("li");
+    li.className = todo.completed ? "completed" : "";
+    li.dataset.index = i;
+
+    const toggle = document.createElement("input");
+    toggle.type = "checkbox";
+    toggle.className = "toggle";
+    toggle.id = `toggle-${i}`;
+    toggle.checked = todo.completed;
+    toggle.addEventListener("change", () => {
+      const t = load();
+      t[i].completed = toggle.checked;
+      save(t);
+      render();
+    });
+
+    const label = document.createElement("label");
+    label.htmlFor = toggle.id;
+    label.textContent = todo.title;
+
+    const destroy = document.createElement("button");
+    destroy.className = "destroy";
+    destroy.textContent = "×";
+    destroy.setAttribute("aria-label", `Delete "${todo.title}"`);
+    destroy.addEventListener("click", () => {
+      const t = load();
+      t.splice(i, 1);
+      save(t);
+      render();
+    });
+
+    li.append(toggle, label, destroy);
+    list.appendChild(li);
+  });
+}
+
+input.addEventListener("keydown", (e) => {
+  if (e.key === "Enter" && input.value.trim()) {
+    const todos = load();
+    todos.push({ title: input.value.trim(), completed: false });
+    save(todos);
+    input.value = "";
+    render();
+  }
+});
+
+render();
+</script>
+</body>
+</html>
