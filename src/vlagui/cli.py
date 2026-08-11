@@ -22,6 +22,12 @@ def _cmd_run(args: argparse.Namespace) -> None:
     print(record.model_dump_json(indent=2))
 
 
+def _cmd_serve(args: argparse.Namespace) -> None:
+    import uvicorn
+
+    uvicorn.run("vlagui.api:app", host=args.host, port=args.port)
+
+
 def _cmd_eval(args: argparse.Namespace) -> None:
     models = [m.strip() for m in args.model.split(",") if m.strip()]
     if args.ablate in ("", "none"):
@@ -52,6 +58,11 @@ def main() -> None:
     p_eval.add_argument("--ablate", default="none", help="none | all | comma-separated: no-som,no-detector,vlm-verifier")
     p_eval.add_argument("--report", default=None, help="output .md path (default reports/eval_report.md)")
     p_eval.set_defaults(func=_cmd_eval)
+
+    p_serve = sub.add_parser("serve", help="run the FastAPI demo service (POST /run, GET /runs/{id}, SSE stream)")
+    p_serve.add_argument("--host", default="127.0.0.1")
+    p_serve.add_argument("--port", type=int, default=8000)
+    p_serve.set_defaults(func=_cmd_serve)
 
     args = parser.parse_args()
     args.func(args)

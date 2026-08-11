@@ -9,6 +9,7 @@ authors = [
 requires-python = ">=3.12"
 dependencies = [
     "einops>=0.8.2",
+    "fastapi>=0.141.1",
     "huggingface-hub<1.0",
     "langgraph>=1.2.10",
     "opencv-python-headless>=5.0.0.93",
@@ -20,6 +21,7 @@ dependencies = [
     "torchvision>=0.28.0",
     "transformers==4.49.0",
     "ultralytics>=8.4.116",
+    "uvicorn>=0.52.1",
 ]
 
 [project.scripts]

@@ -183,22 +183,24 @@ class Orchestrator:
 
         return graph.compile(checkpointer=MemorySaver())
 
-    def run(self, task_instruction: str, task_assertion: str, max_steps: int | None = None) -> RunRecord:
+    def _initial_state(self, task_instruction: str, task_assertion: str, max_steps: int | None) -> tuple[str, AgentState]:
         run_id = str(uuid.uuid4())
-        max_steps = max_steps or settings.max_steps
-        started_at = datetime.now(timezone.utc)
-
         initial_state: AgentState = {
             "task_instruction": task_instruction,
             "task_assertion": task_assertion,
             "step_index": 0,
-            "max_steps": max_steps,
+            "max_steps": max_steps or settings.max_steps,
             "history": [],
             "steps": [],
             "done": False,
             "outcome": None,
             "termination_reason": "",
         }
+        return run_id, initial_state
+
+    def run(self, task_instruction: str, task_assertion: str, max_steps: int | None = None) -> RunRecord:
+        run_id, initial_state = self._initial_state(task_instruction, task_assertion, max_steps)
+        started_at = datetime.now(timezone.utc)
 
         try:
             final_state = self._graph.invoke(initial_state, config={"configurable": {"thread_id": run_id}})
@@ -220,3 +222,27 @@ class Orchestrator:
             termination_reason=termination_reason,
             steps=steps,
         )
+
+    def run_streaming(self, task_instruction: str, task_assertion: str, max_steps: int | None = None):
+        """Same loop as run(), but yields each StepRecord as soon as it's produced
+        instead of blocking until the whole run finishes, then a final
+        {"outcome", "termination_reason"} dict. Powers api.py's SSE endpoint.
+
+        Uses LangGraph's own .stream(stream_mode="updates") rather than adding
+        bespoke per-node instrumentation — it already yields {node_name:
+        return_dict} for each node as it executes."""
+        run_id, initial_state = self._initial_state(task_instruction, task_assertion, max_steps)
+        seen = 0
+        try:
+            for update in self._graph.stream(initial_state, config={"configurable": {"thread_id": run_id}}, stream_mode="updates"):
+                verify_update = update.get("verify")
+                if verify_update is None:
+                    continue
+                steps = verify_update["steps"]
+                for step in steps[seen:]:
+                    yield step
+                seen = len(steps)
+                if verify_update.get("done"):
+                    yield {"outcome": verify_update["outcome"], "termination_reason": verify_update["termination_reason"]}
+        except Exception as e:
+            yield {"outcome": "failure", "termination_reason": f"error: {e}"}
