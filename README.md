@@ -29,7 +29,7 @@ The agent loop, one line per component:
 
 ## Current status
 
-**Phase 4 is done. Phase 5 is in progress** (task suite written, eval harness and API not yet built). See `CLAUDE.md` for the full roadmap and `tasks.md` for the per-task board.
+**Phase 4 is done. Phase 5 is in progress** (task suite written, eval harness and API not yet built). See `tasks.md` for the full roadmap and per-task board.
 
 Completed so far:
 
@@ -42,7 +42,7 @@ Completed so far:
 
 Not done yet: there is no fine-tuned model, no eval harness or comparison report, no API, and no dataset. Any numbers below Phase 3 in the roadmap do not exist yet. The only measured number so far is the Phase 3 grounding hit-rate on ScreenSpot; there is no fine-tuned model to compare it against.
 
-**A confirmed finding from Phase 4's diagnostic work, not a bug**: the base `qwen3-vl:2b-instruct` planner reliably completes single-step actions but does not reliably track multi-step task state. A controlled test isolating visual state from textual history showed the planner ignores unambiguous visual evidence of progress (a checked checkbox with struck-through text) but advances correctly when told in text that a step succeeded, and appears to key off literal result words in history rather than reasoning over either channel. This is a genuine capability limit of the base model, not a pipeline defect, and Phase 5's task suite was sized accordingly. Full diagnostic writeup is in `CLAUDE.md`'s status section.
+**A confirmed finding from Phase 4's diagnostic work, not a bug**: the base `qwen3-vl:2b-instruct` planner reliably completes single-step actions but does not reliably track multi-step task state. A controlled test isolating visual state from textual history showed the planner ignores unambiguous visual evidence of progress (a checked checkbox with struck-through text) but advances correctly when told in text that a step succeeded, and appears to key off literal result words in history rather than reasoning over either channel. This is a genuine capability limit of the base model, not a pipeline defect, and Phase 5's task suite was sized accordingly.
 
 ## Hardware constraint
 
@@ -93,4 +93,4 @@ targets/                                               # self-hosted target app 
 docker-compose.yml                                     # the 4 target apps
 ```
 
-See `CLAUDE.md` for the full roadmap, hard constraints, and invariants, and `tasks.md` for the per-task dependency board.
+See `tasks.md` for the full roadmap and per-task dependency board.
